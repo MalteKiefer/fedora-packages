@@ -1,4 +1,4 @@
-# Epson Inkjet Printer Driver (ESC/P-R) for Fedora 43 (COPR)
+# Epson Inkjet Printer Driver (ESC/P-R) for Fedora (COPR)
 
 Name:           epson-inkjet-printer-escpr
 Version:        1.8.8
@@ -22,8 +22,11 @@ Requires:       cups
 Requires:       ghostscript
 
 %description
-Epson Inkjet Printer Driver (ESC/P-R) for Linux.
-Provides CUPS filter and PPD files for a wide range of Epson inkjet printers.
+Epson Inkjet Printer Driver (ESC/P-R) for Linux. This package provides
+CUPS filter and PPD files for a wide range of Epson inkjet printers,
+enabling full printing support including color management, borderless
+printing, and multiple paper sizes. The driver communicates with the
+printer using the ESC/P-R raster command protocol.
 
 %prep
 # Source is a src.rpm containing a tarball

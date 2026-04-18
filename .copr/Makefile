@@ -20,4 +20,8 @@ ifeq ($(SPECBASE),epson-inkjet-printer-escpr2.spec)
 	cp $(dir $(spec))bug_x86_64.patch $(SRCDIR)/
 	cp $(dir $(spec))enable_velvet_fine_art_paper.patch $(SRCDIR)/
 endif
+ifeq ($(SPECBASE),jdownloader2.spec)
+	curl -Lo $(SRCDIR)/jdownloader2.tar.gz \
+		"https://aur.archlinux.org/cgit/aur.git/snapshot/jdownloader2.tar.gz"
+endif
 	rpmbuild -bs --define "_sourcedir $(SRCDIR)" --define "_srcrpmdir $(outdir)" $(spec)

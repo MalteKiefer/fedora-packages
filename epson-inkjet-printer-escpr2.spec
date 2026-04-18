@@ -1,4 +1,4 @@
-# Epson Inkjet Printer Driver 2 (ESC/P-R) for Fedora 43 (COPR)
+# Epson Inkjet Printer Driver 2 (ESC/P-R) for Fedora (COPR)
 
 Name:           epson-inkjet-printer-escpr2
 Version:        1.2.38
@@ -24,9 +24,12 @@ Requires:       cups
 Requires:       ghostscript
 
 %description
-Epson Inkjet Printer Driver 2 (ESC/P-R) for Linux.
-Second-generation driver providing CUPS filter and PPD files for newer
-Epson inkjet printers.
+Epson Inkjet Printer Driver 2 (ESC/P-R) for Linux. This is the
+second-generation ESC/P-R driver that supports newer Epson inkjet and
+EcoTank printers not covered by the original escpr driver. It provides
+CUPS filter and PPD files with support for features such as duplex
+printing, high-resolution output, and additional media types including
+Velvet Fine Art Paper (via patch).
 
 %prep
 # Source tarball contains a nested tarball

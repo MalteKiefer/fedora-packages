@@ -1,4 +1,4 @@
-# Flutter SDK RPM Spec for Fedora 43 (COPR)
+# Flutter SDK RPM Spec for Fedora (COPR)
 # Flutter ships a pre-built SDK bundle including Dart – we repackage it.
 
 %global         flutter_version 3.41.7
