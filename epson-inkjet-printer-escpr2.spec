@@ -55,6 +55,7 @@ cd %{name}-%{version}
 %files
 %license %{name}-%{version}/COPYING
 %{_libdir}/cups/filter/epson-escpr2
+%{_libdir}/cups/filter/epson-escpr-wrapper2
 %{_datadir}/ppd/%{name}/
 %{_libdir}/libescpr2.so.*
 %exclude %{_libdir}/libescpr2.a
