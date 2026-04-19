@@ -8,7 +8,7 @@
 
 Name:           tutanota-desktop
 Version:        340.260326.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Desktop client for Tuta Mail (formerly Tutanota) secure e-mail
 License:        GPL-3.0-or-later
 URL:            https://tuta.com/secure-email
@@ -69,11 +69,16 @@ desktop-file-edit \
 # Prebuilt — nothing to compile.
 
 %install
-# Normalize dir perms inside the AppImage payload
-find squashfs-root/{locales,resources,usr/share/icons} -type d -exec chmod 0755 {} + 2>/dev/null || :
-
 install -d %{buildroot}/opt/%{name}
 cp -a squashfs-root/. %{buildroot}/opt/%{name}/
+
+# AppImage squashfs extracts with restrictive modes (0700 on dirs, no +x
+# on the main binary). Normalize everything to world-readable and make
+# the executables runnable by non-root users.
+find %{buildroot}/opt/%{name} -type d -exec chmod 0755 {} +
+find %{buildroot}/opt/%{name} -type f -exec chmod 0644 {} +
+chmod 0755 %{buildroot}/opt/%{name}/%{name}
+chmod 0755 %{buildroot}/opt/%{name}/chrome_crashpad_handler
 
 # Required SUID bit so Chromium sandbox works without --no-sandbox
 chmod 4755 %{buildroot}/opt/%{name}/chrome-sandbox
