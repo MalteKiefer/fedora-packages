@@ -34,4 +34,9 @@ ifeq ($(SPECBASE),tutanota-desktop.spec)
 	curl -Lo $(SRCDIR)/tutao-pub-340.260326.1.pem \
 		"https://github.com/tutao/tutanota/raw/tutanota-desktop-release-340.260326.1/tutao-pub.pem"
 endif
+ifeq ($(SPECBASE),proton-authenticator.spec)
+	rm -f $(SRCDIR)/ProtonAuthenticator_*_amd64.deb
+	curl -Lo $(SRCDIR)/ProtonAuthenticator_1.1.4_amd64.deb \
+		"https://proton.me/download/authenticator/linux/ProtonAuthenticator_1.1.4_amd64.deb"
+endif
 	rpmbuild -bs --define "_sourcedir $(SRCDIR)" --define "_srcrpmdir $(outdir)" $(spec)
