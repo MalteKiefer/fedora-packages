@@ -8,7 +8,7 @@
 
 Name:           proton-authenticator
 Version:        1.1.4
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Proton Authenticator — 2FA app with secure sync and backup
 License:        GPL-3.0-or-later
 URL:            https://proton.me/authenticator
@@ -81,8 +81,12 @@ if [ -f %{buildroot}%{_libdir}/%{name}/%{name} ]; then
     chmod 0755 %{buildroot}%{_libdir}/%{name}/%{name}
 fi
 
-# Validate patched .desktop entry — catches Exec rewrite mistakes early
-desktop-file-validate "%{buildroot}%{_datadir}/applications/Proton Authenticator.desktop"
+# Rename the desktop file: RPM %%files cannot handle spaces in paths,
+# and the space breaks desktop-database indexing on some tools.
+mv "%{buildroot}%{_datadir}/applications/Proton Authenticator.desktop" \
+   "%{buildroot}%{_datadir}/applications/%{name}.desktop"
+
+desktop-file-validate %{buildroot}%{_datadir}/applications/%{name}.desktop
 
 %post
 update-desktop-database %{_datadir}/applications &>/dev/null || :
@@ -99,10 +103,8 @@ gtk-update-icon-cache -f -t %{_datadir}/icons/hicolor &>/dev/null || :
 
 %files
 %{_bindir}/%{name}
-%{_datadir}/applications/Proton Authenticator.desktop
-%{_datadir}/icons/hicolor/*/apps/*.png
-%{_datadir}/icons/hicolor/*/apps/*.svg
-%{_datadir}/metainfo/*.xml
+%{_datadir}/applications/%{name}.desktop
+%{_datadir}/icons/hicolor/*/apps/*
 
 %changelog
 * Sun Apr 19 2026 Malte Kiefer <malte.kiefer@aleph-alpha.com> - 1.1.4-3
