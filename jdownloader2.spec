@@ -13,7 +13,7 @@
 
 Name:           jdownloader2
 Version:        2.0
-Release:        22%{?dist}
+Release:        23%{?dist}
 Summary:        Java-based download manager for one-click hosting sites
 License:        GPL-3.0-or-later AND LicenseRef-JDownloader-Proprietary
 URL:            https://jdownloader.org/
