@@ -119,7 +119,6 @@ gtk-update-icon-cache -f -t %{_datadir}/icons/hicolor &>/dev/null || :
 %{_bindir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/apps/*.png
-%{_datadir}/icons/hicolor/*/mimetypes/*.png
 
 %changelog
 * Sun Apr 19 2026 Malte Kiefer <malte.kiefer@aleph-alpha.com> - 340.260326.1-1
