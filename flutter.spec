@@ -67,20 +67,34 @@ bin/flutter precache --linux 2>/dev/null || true
 install -d %{buildroot}%{install_dir}
 cp -a . %{buildroot}%{install_dir}/
 
+# Drop bundled git repository + CI metadata. Flutter self-update is
+# managed by dnf in an RPM install, so .git serves no purpose here and
+# triggers "dubious ownership" warnings when users run flutter.
+rm -rf %{buildroot}%{install_dir}/.git \
+       %{buildroot}%{install_dir}/.github \
+       %{buildroot}%{install_dir}/.ci \
+       %{buildroot}%{install_dir}/.gitignore \
+       %{buildroot}%{install_dir}/.gitattributes \
+       %{buildroot}%{install_dir}/.pub-cache
+
+# Pin SDK version so `flutter --version` reports something sane after
+# removing .git. Flutter reads VERSION from the SDK root if present.
+echo "%{flutter_version}" > %{buildroot}%{install_dir}/version
+
 # Create wrapper scripts
 install -d %{buildroot}%{_bindir}
 
 cat > %{buildroot}%{_bindir}/flutter << 'WRAPPER'
 #!/usr/bin/env bash
 export FLUTTER_ROOT="%{install_dir}"
-exec "%{install_dir}/bin/flutter" "$@"
+exec "${FLUTTER_ROOT}/bin/flutter" "$@"
 WRAPPER
 chmod 0755 %{buildroot}%{_bindir}/flutter
 
 cat > %{buildroot}%{_bindir}/dart << 'WRAPPER'
 #!/usr/bin/env bash
 export FLUTTER_ROOT="%{install_dir}"
-exec "%{install_dir}/bin/dart" "$@"
+exec "${FLUTTER_ROOT}/bin/dart" "$@"
 WRAPPER
 chmod 0755 %{buildroot}%{_bindir}/dart
 
