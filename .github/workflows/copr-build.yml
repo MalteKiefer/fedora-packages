@@ -75,13 +75,41 @@ jobs:
             SPECS=$(printf '%s\n' ${MANUAL_SPECS} | awk '/\.spec$/ && $0 !~ "/" {print}')
           else
             CHANGED=$(git diff --name-only "${BEFORE_SHA}" "${AFTER_SHA}" 2>/dev/null || true)
+
+            # 1. Directly changed spec files.
             SPEC_TOUCHED=$(printf '%s\n' "${CHANGED}" | grep -E '^[^/]+\.spec$' || true)
-            OTHER_TOUCHED=$(printf '%s\n' "${CHANGED}" | grep -E '^(\.copr/Makefile|[^/]+\.patch|\.github/workflows/copr-build\.yml)$' || true)
-            if [ -n "${OTHER_TOUCHED}" ] && [ -z "${SPEC_TOUCHED}" ]; then
-              SPECS=$(ls -1 *.spec 2>/dev/null || true)
-            else
-              SPECS="${SPEC_TOUCHED}"
+
+            # 2. For each changed *.patch, rebuild the spec(s) that reference it.
+            PATCHES_TOUCHED=$(printf '%s\n' "${CHANGED}" | grep -E '^[^/]+\.patch$' || true)
+            PATCH_SPECS=""
+            if [ -n "${PATCHES_TOUCHED}" ]; then
+              while IFS= read -r patch; do
+                [ -z "${patch}" ] && continue
+                for sp in *.spec; do
+                  [ -f "${sp}" ] || continue
+                  if grep -qF "${patch}" "${sp}"; then
+                    PATCH_SPECS="${PATCH_SPECS}${sp}"$'\n'
+                  fi
+                done
+              done <<< "${PATCHES_TOUCHED}"
             fi
+
+            # 3. If .copr/Makefile changed, rebuild only specs whose per-spec
+            #    block in the Makefile actually changed.
+            MAKEFILE_SPECS=""
+            if printf '%s\n' "${CHANGED}" | grep -qx '\.copr/Makefile'; then
+              DIFF=$(git diff --unified=0 "${BEFORE_SHA}" "${AFTER_SHA}" -- .copr/Makefile || true)
+              for sp in *.spec; do
+                [ -f "${sp}" ] || continue
+                if printf '%s\n' "${DIFF}" | grep -qF "${sp}"; then
+                  MAKEFILE_SPECS="${MAKEFILE_SPECS}${sp}"$'\n'
+                fi
+              done
+            fi
+
+            # Workflow file changes and other non-spec, non-patch, non-Makefile
+            # changes trigger no rebuild. Use workflow_dispatch for that.
+            SPECS=$(printf '%s\n%s\n%s' "${SPEC_TOUCHED}" "${PATCH_SPECS}" "${MAKEFILE_SPECS}")
           fi
 
           SPECS=$(printf '%s\n' ${SPECS} | awk 'NF' | sort -u)
