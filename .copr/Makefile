@@ -26,4 +26,12 @@ ifeq ($(SPECBASE),jdownloader2.spec)
 	curl -Lo $(SRCDIR)/jdownloader2.tar.gz \
 		"https://aur.archlinux.org/cgit/aur.git/snapshot/jdownloader2.tar.gz"
 endif
+ifeq ($(SPECBASE),tutanota-desktop.spec)
+	curl -Lo $(SRCDIR)/tutanota-desktop-340.260326.1.AppImage \
+		"https://github.com/tutao/tutanota/releases/download/tutanota-desktop-release-340.260326.1/tutanota-desktop-linux.AppImage"
+	curl -Lo $(SRCDIR)/linux-sig-340.260326.1.bin \
+		"https://app.tuta.com/desktop/linux-sig.bin"
+	curl -Lo $(SRCDIR)/tutao-pub-340.260326.1.pem \
+		"https://github.com/tutao/tutanota/raw/tutanota-desktop-release-340.260326.1/tutao-pub.pem"
+endif
 	rpmbuild -bs --define "_sourcedir $(SRCDIR)" --define "_srcrpmdir $(outdir)" $(spec)
