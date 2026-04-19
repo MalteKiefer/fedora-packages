@@ -27,8 +27,10 @@ BuildRequires:  systemd-rpm-macros
 BuildRequires:  coreutils
 
 Requires:       hicolor-icon-theme
-# Any Fedora JDK (17, 21, latest) provides java-headless — stay version-agnostic.
-Requires:       java-headless >= 1:17
+# JDownloader ships a Swing GUI, so we need full JDK with AWT/Swing, not
+# java-headless (which has no GUI libs and forces JDownloader into
+# headless mode with a MyJDownloader login prompt on the terminal).
+Requires:       java >= 1:17
 Requires:       libarchive
 Requires:       libXi
 Requires:       libXtst
