@@ -1,0 +1,169 @@
+name: COPR build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.spec'
+      - '*.patch'
+      - '.copr/Makefile'
+      - '.github/workflows/copr-build.yml'
+  workflow_dispatch:
+    inputs:
+      specs:
+        description: 'Space-separated spec files to build (empty = all changed).'
+        required: false
+        default: ''
+      rebuild_all:
+        description: 'Rebuild every spec file in the repo.'
+        required: false
+        default: 'false'
+
+concurrency:
+  group: copr-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:43
+      options: --user 0
+
+    steps:
+      - name: Install tools
+        run: |
+          dnf -y install \
+            git rpm-build rpmdevtools copr-cli make curl which findutils \
+            python3-copr python3-copr-common
+
+      - name: Mark workspace safe
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Configure copr-cli
+        env:
+          COPR_CONFIG: ${{ secrets.COPR_CONFIG }}
+        run: |
+          if [ -z "${COPR_CONFIG}" ]; then
+            echo "::error::COPR_CONFIG secret is missing. Paste contents of ~/.config/copr into the secret."
+            exit 1
+          fi
+          install -d -m 0700 "${HOME}/.config"
+          printf '%s\n' "${COPR_CONFIG}" > "${HOME}/.config/copr"
+          chmod 0600 "${HOME}/.config/copr"
+
+      - name: Determine spec files to build
+        id: select
+        env:
+          REBUILD_ALL: ${{ github.event.inputs.rebuild_all }}
+          MANUAL_SPECS: ${{ github.event.inputs.specs }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${REBUILD_ALL}" = "true" ]; then
+            SPECS=$(ls -1 *.spec 2>/dev/null || true)
+          elif [ -n "${MANUAL_SPECS}" ]; then
+            # Keep only tokens ending in .spec to avoid running arbitrary strings.
+            SPECS=$(printf '%s\n' ${MANUAL_SPECS} | awk '/\.spec$/ && $0 !~ "/" {print}')
+          else
+            CHANGED=$(git diff --name-only "${BEFORE_SHA}" "${AFTER_SHA}" 2>/dev/null || true)
+            SPEC_TOUCHED=$(printf '%s\n' "${CHANGED}" | grep -E '^[^/]+\.spec$' || true)
+            OTHER_TOUCHED=$(printf '%s\n' "${CHANGED}" | grep -E '^(\.copr/Makefile|[^/]+\.patch|\.github/workflows/copr-build\.yml)$' || true)
+            if [ -n "${OTHER_TOUCHED}" ] && [ -z "${SPEC_TOUCHED}" ]; then
+              SPECS=$(ls -1 *.spec 2>/dev/null || true)
+            else
+              SPECS="${SPEC_TOUCHED}"
+            fi
+          fi
+
+          SPECS=$(printf '%s\n' ${SPECS} | awk 'NF' | sort -u)
+          if [ -z "${SPECS}" ]; then
+            echo "No spec files to build."
+            echo "specs=" >> "${GITHUB_OUTPUT}"
+          else
+            echo "Building specs:"
+            printf '  %s\n' ${SPECS}
+            {
+              echo "specs<<EOF"
+              echo "${SPECS}"
+              echo "EOF"
+            } >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Build SRPMs and submit to COPR
+        if: steps.select.outputs.specs != ''
+        env:
+          COPR_PROJECT: maltekiefer/fedora-extras
+          SPECS_LIST: ${{ steps.select.outputs.specs }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p /tmp/srpms
+          FAILED=()
+          SUBMITTED=()
+
+          while IFS= read -r spec; do
+            [ -z "${spec}" ] && continue
+            case "${spec}" in
+              */*|*..*|-*) echo "::warning::Refusing suspicious path ${spec}"; continue ;;
+            esac
+            [ -f "${spec}" ] || { echo "::warning::Spec ${spec} missing, skipped."; continue; }
+
+            echo "::group::Build SRPM for ${spec}"
+            rm -rf "${HOME}/rpmbuild/SOURCES"
+            mkdir -p "${HOME}/rpmbuild/SOURCES"
+            rm -f /tmp/srpms/*.src.rpm
+
+            if ! make -f .copr/Makefile srpm \
+                  spec="${GITHUB_WORKSPACE}/${spec}" \
+                  outdir=/tmp/srpms; then
+              echo "::error::SRPM build failed for ${spec}"
+              FAILED+=("${spec} (srpm)")
+              echo "::endgroup::"
+              continue
+            fi
+
+            SRPM=$(ls -1 /tmp/srpms/*.src.rpm 2>/dev/null | head -n1 || true)
+            if [ -z "${SRPM}" ]; then
+              echo "::error::No SRPM produced for ${spec}"
+              FAILED+=("${spec} (no srpm)")
+              echo "::endgroup::"
+              continue
+            fi
+
+            echo "Uploading ${SRPM} to COPR project ${COPR_PROJECT}"
+            if copr-cli build --nowait "${COPR_PROJECT}" "${SRPM}"; then
+              SUBMITTED+=("${spec}")
+            else
+              echo "::error::copr-cli build failed for ${spec}"
+              FAILED+=("${spec} (upload)")
+            fi
+            echo "::endgroup::"
+          done <<< "${SPECS_LIST}"
+
+          {
+            echo "## COPR build summary"
+            if [ "${#SUBMITTED[@]}" -gt 0 ]; then
+              echo "**Submitted (background):**"
+              for s in "${SUBMITTED[@]}"; do
+                echo "- ${s}"
+              done
+            fi
+            if [ "${#FAILED[@]}" -gt 0 ]; then
+              echo "**Failed:**"
+              for f in "${FAILED[@]}"; do
+                echo "- ${f}"
+              done
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          [ "${#FAILED[@]}" -eq 0 ]
