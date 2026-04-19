@@ -7,6 +7,9 @@
 %define         __strip /bin/true
 %global         __provides_exclude_from ^/opt/JDownloader(Scripts)?/.*$
 %global         __requires_exclude_from ^/opt/JDownloader(Scripts)?/.*$
+# group is created in %%pre at install time — suppress the auto-generated
+# Requires: group(jdownloader) that RPM infers from the setgid dir.
+%global         __requires_exclude ^group\\(jdownloader\\)$
 
 Name:           jdownloader2
 Version:        2.0
@@ -24,12 +27,13 @@ BuildRequires:  systemd-rpm-macros
 BuildRequires:  coreutils
 
 Requires:       hicolor-icon-theme
-Requires:       java-17-openjdk-headless
+# Any Fedora JDK (17, 21, latest) provides java-headless — stay version-agnostic.
+Requires:       java-headless >= 1:17
 Requires:       libarchive
 Requires:       libXi
 Requires:       libXtst
 Requires:       dejavu-sans-fonts
-Requires(post): shadow-utils
+Requires(pre):  shadow-utils
 
 Suggests:       phantomjs
 
@@ -75,8 +79,9 @@ done
 # systemd unit
 install -Dm0644 jdownloader.service %{buildroot}%{_unitdir}/jdownloader.service
 
-# Install target dir for self-updating jar (setgid so group users can write)
-install -d -m2775 %{buildroot}/opt/JDownloader
+# Install target dir for self-updating jar. Ownership and setgid bit are
+# applied in %%post, after the jdownloader group is created in %%pre.
+install -d -m0755 %{buildroot}/opt/JDownloader
 
 # CLI symlinks
 install -d -m0755 %{buildroot}%{_bindir}
@@ -93,6 +98,9 @@ exit 0
 
 %post
 %systemd_post jdownloader.service
+# Apply group-writable setgid permissions now that the group exists.
+chown root:jdownloader /opt/JDownloader 2>/dev/null || :
+chmod 2775 /opt/JDownloader 2>/dev/null || :
 # Refresh mime + icon caches
 touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
 update-mime-database %{_datadir}/mime &>/dev/null || :
@@ -117,7 +125,7 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 /opt/JDownloaderScripts/JDownloaderHeadlessCtl
 /opt/JDownloaderScripts/functions.sh
 /opt/JDownloaderScripts/JDownloaderHeadlessCleanLogin
-%attr(2775,root,jdownloader) %dir /opt/JDownloader
+%dir /opt/JDownloader
 %{_bindir}/JDownloader
 %{_bindir}/jdownloader
 %{_bindir}/JDownloaderHeadless
