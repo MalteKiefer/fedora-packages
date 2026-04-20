@@ -39,4 +39,9 @@ ifeq ($(SPECBASE),proton-authenticator.spec)
 	curl -Lo $(SRCDIR)/ProtonAuthenticator_1.1.4_amd64.deb \
 		"https://proton.me/download/authenticator/linux/ProtonAuthenticator_1.1.4_amd64.deb"
 endif
+ifeq ($(SPECBASE),obsidian.spec)
+	rm -f $(SRCDIR)/obsidian_*_amd64.deb
+	curl -Lo $(SRCDIR)/obsidian_1.12.7_amd64.deb \
+		"https://github.com/obsidianmd/obsidian-releases/releases/download/v1.12.7/obsidian_1.12.7_amd64.deb"
+endif
 	rpmbuild -bs --define "_sourcedir $(SRCDIR)" --define "_srcrpmdir $(outdir)" $(spec)
