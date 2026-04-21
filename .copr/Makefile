@@ -1,15 +1,12 @@
 .PHONY: srpm
 
-SRCDIR = $(HOME)/rpmbuild/SOURCES
+SRCDIR   = $(HOME)/rpmbuild/SOURCES
 SPECBASE = $(notdir $(spec))
+SPECDIR  = $(dir $(spec))
 
 srpm:
 	mkdir -p $(SRCDIR)
-ifeq ($(SPECBASE),flutter.spec)
-	spectool -g -R $(spec) 2>/dev/null || \
-		curl -Lo $(SRCDIR)/flutter_linux_3.41.7-stable.tar.xz \
-		"https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.41.7-stable.tar.xz"
-endif
+	cp -f $(SPECDIR)*.patch $(SRCDIR)/ 2>/dev/null || :
 ifeq ($(SPECBASE),epson-inkjet-printer-escpr.spec)
 	rm -f $(SRCDIR)/epson-inkjet-printer-escpr-*.src.rpm
 	curl --user-agent Firefox -Lo $(SRCDIR)/epson-inkjet-printer-escpr-1.8.8-1.src.rpm \
@@ -19,29 +16,5 @@ ifeq ($(SPECBASE),epson-inkjet-printer-escpr2.spec)
 	rm -f $(SRCDIR)/epson-inkjet-printer-escpr2-*.tar.gz
 	curl --user-agent Firefox -Lo $(SRCDIR)/epson-inkjet-printer-escpr2-1.2.38-1.tar.gz \
 		"https://download-center.epson.com/f/module/42a6470c-53bf-4993-abad-ba5b4a1d5d84/epson-inkjet-printer-escpr2-1.2.38-1.tar.gz"
-	cp $(dir $(spec))bug_x86_64.patch $(SRCDIR)/
-	cp $(dir $(spec))enable_velvet_fine_art_paper.patch $(SRCDIR)/
-endif
-ifeq ($(SPECBASE),jdownloader2.spec)
-	curl -Lo $(SRCDIR)/jdownloader2.tar.gz \
-		"https://aur.archlinux.org/cgit/aur.git/snapshot/jdownloader2.tar.gz"
-endif
-ifeq ($(SPECBASE),tutanota-desktop.spec)
-	curl -Lo $(SRCDIR)/tutanota-desktop-340.260326.1.AppImage \
-		"https://github.com/tutao/tutanota/releases/download/tutanota-desktop-release-340.260326.1/tutanota-desktop-linux.AppImage"
-	curl -Lo $(SRCDIR)/linux-sig-340.260326.1.bin \
-		"https://app.tuta.com/desktop/linux-sig.bin"
-	curl -Lo $(SRCDIR)/tutao-pub-340.260326.1.pem \
-		"https://github.com/tutao/tutanota/raw/tutanota-desktop-release-340.260326.1/tutao-pub.pem"
-endif
-ifeq ($(SPECBASE),proton-authenticator.spec)
-	rm -f $(SRCDIR)/ProtonAuthenticator_*_amd64.deb
-	curl -Lo $(SRCDIR)/ProtonAuthenticator_1.1.4_amd64.deb \
-		"https://proton.me/download/authenticator/linux/ProtonAuthenticator_1.1.4_amd64.deb"
-endif
-ifeq ($(SPECBASE),obsidian.spec)
-	rm -f $(SRCDIR)/obsidian_*_amd64.deb
-	curl -Lo $(SRCDIR)/obsidian_1.12.7_amd64.deb \
-		"https://github.com/obsidianmd/obsidian-releases/releases/download/v1.12.7/obsidian_1.12.7_amd64.deb"
 endif
 	rpmbuild -bs --define "_sourcedir $(SRCDIR)" --define "_srcrpmdir $(outdir)" $(spec)
