@@ -7,6 +7,7 @@ SPECDIR  = $(dir $(spec))
 srpm:
 	mkdir -p $(SRCDIR)
 	cp -f $(SPECDIR)*.patch $(SRCDIR)/ 2>/dev/null || :
+	spectool -g -C $(SRCDIR) $(spec) || :
 ifeq ($(SPECBASE),epson-inkjet-printer-escpr.spec)
 	rm -f $(SRCDIR)/epson-inkjet-printer-escpr-*.src.rpm
 	curl --user-agent Firefox -Lo $(SRCDIR)/epson-inkjet-printer-escpr-1.8.8-1.src.rpm \
