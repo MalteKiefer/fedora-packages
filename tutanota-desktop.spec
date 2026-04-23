@@ -7,7 +7,7 @@
 %global         __requires_exclude_from ^/opt/%{name}/.*$
 
 Name:           tutanota-desktop
-Version:        341.260417.0
+Version:        345.260421.2
 Release:        2%{?dist}
 Summary:        Desktop client for Tuta Mail (formerly Tutanota) secure e-mail
 License:        GPL-3.0-or-later
