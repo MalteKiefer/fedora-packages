@@ -7,7 +7,7 @@
 
 Name:           flutter
 Version:        %{flutter_version}
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Google's UI toolkit for building natively compiled applications
 License:        BSD-3-Clause
 URL:            https://flutter.dev
@@ -73,6 +73,13 @@ cp -a . %{buildroot}%{install_dir}/
 rm -rf %{buildroot}%{install_dir}/.github \
        %{buildroot}%{install_dir}/.ci \
        %{buildroot}%{install_dir}/.pub-cache
+
+# Flutter writes engine.stamp + downloads artifacts into bin/cache on every
+# invocation. Make the cache tree world-writable so non-root users can run
+# `flutter` without "Keine Berechtigung" errors. Sticky bit on dirs prevents
+# users from clobbering each other's files.
+find %{buildroot}%{install_dir}/bin/cache -type d -exec chmod 1777 {} +
+find %{buildroot}%{install_dir}/bin/cache -type f -exec chmod 0666 {} +
 
 # Create wrapper scripts
 install -d %{buildroot}%{_bindir}
