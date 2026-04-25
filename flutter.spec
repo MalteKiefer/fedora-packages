@@ -7,7 +7,7 @@
 
 Name:           flutter
 Version:        %{flutter_version}
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Google's UI toolkit for building natively compiled applications
 License:        BSD-3-Clause
 URL:            https://flutter.dev
@@ -75,11 +75,10 @@ rm -rf %{buildroot}%{install_dir}/.github \
        %{buildroot}%{install_dir}/.pub-cache
 
 # Flutter writes engine.stamp + downloads artifacts into bin/cache on every
-# invocation. Make the cache tree world-writable so non-root users can run
-# `flutter` without "Keine Berechtigung" errors. Sticky bit on dirs prevents
-# users from clobbering each other's files.
-find %{buildroot}%{install_dir}/bin/cache -type d -exec chmod 1777 {} +
-find %{buildroot}%{install_dir}/bin/cache -type f -exec chmod 0666 {} +
+# invocation. Add world-writable bit (preserve exec on binaries like dart)
+# and a sticky bit on dirs so users can't clobber each other's files.
+chmod -R a+w %{buildroot}%{install_dir}/bin/cache
+find %{buildroot}%{install_dir}/bin/cache -type d -exec chmod +t {} +
 
 # Create wrapper scripts
 install -d %{buildroot}%{_bindir}
