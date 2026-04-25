@@ -7,7 +7,7 @@
 
 Name:           flutter
 Version:        %{flutter_version}
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Google's UI toolkit for building natively compiled applications
 License:        BSD-3-Clause
 URL:            https://flutter.dev
@@ -75,10 +75,14 @@ rm -rf %{buildroot}%{install_dir}/.github \
        %{buildroot}%{install_dir}/.pub-cache
 
 # Flutter writes engine.stamp + downloads artifacts into bin/cache on every
-# invocation. Add world-writable bit (preserve exec on binaries like dart)
-# and a sticky bit on dirs so users can't clobber each other's files.
-chmod -R a+w %{buildroot}%{install_dir}/bin/cache
-find %{buildroot}%{install_dir}/bin/cache -type d -exec chmod +t {} +
+# invocation, and runs `git fetch --tags` against $FLUTTER_ROOT/.git to
+# resolve versions. Add world-writable bit (preserve exec on binaries like
+# dart) and a sticky bit on dirs so users can't clobber each other's files.
+chmod -R a+w %{buildroot}%{install_dir}/bin/cache \
+             %{buildroot}%{install_dir}/.git
+find %{buildroot}%{install_dir}/bin/cache \
+     %{buildroot}%{install_dir}/.git \
+     -type d -exec chmod +t {} +
 
 # Create wrapper scripts
 install -d %{buildroot}%{_bindir}
