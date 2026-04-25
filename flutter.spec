@@ -7,7 +7,7 @@
 
 Name:           flutter
 Version:        %{flutter_version}
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Google's UI toolkit for building natively compiled applications
 License:        BSD-3-Clause
 URL:            https://flutter.dev
@@ -67,19 +67,12 @@ bin/flutter precache --linux 2>/dev/null || true
 install -d %{buildroot}%{install_dir}
 cp -a . %{buildroot}%{install_dir}/
 
-# Drop bundled git repository + CI metadata. Flutter self-update is
-# managed by dnf in an RPM install, so .git serves no purpose here and
-# triggers "dubious ownership" warnings when users run flutter.
-rm -rf %{buildroot}%{install_dir}/.git \
-       %{buildroot}%{install_dir}/.github \
+# Drop CI metadata + transient caches. Keep .git: flutter tool refuses to
+# run without it (bin/internal/shared.sh checks $FLUTTER_ROOT/.git).
+# Wrapper scripts inject safe.directory to silence dubious-ownership.
+rm -rf %{buildroot}%{install_dir}/.github \
        %{buildroot}%{install_dir}/.ci \
-       %{buildroot}%{install_dir}/.gitignore \
-       %{buildroot}%{install_dir}/.gitattributes \
        %{buildroot}%{install_dir}/.pub-cache
-
-# Pin SDK version so `flutter --version` reports something sane after
-# removing .git. Flutter reads VERSION from the SDK root if present.
-echo "%{flutter_version}" > %{buildroot}%{install_dir}/version
 
 # Create wrapper scripts
 install -d %{buildroot}%{_bindir}
@@ -87,6 +80,10 @@ install -d %{buildroot}%{_bindir}
 cat > %{buildroot}%{_bindir}/flutter << 'WRAPPER'
 #!/usr/bin/env bash
 export FLUTTER_ROOT="%{install_dir}"
+# Trust the system-wide SDK checkout regardless of invoking user.
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=safe.directory
+export GIT_CONFIG_VALUE_0="${FLUTTER_ROOT}"
 exec "${FLUTTER_ROOT}/bin/flutter" "$@"
 WRAPPER
 chmod 0755 %{buildroot}%{_bindir}/flutter
@@ -94,6 +91,9 @@ chmod 0755 %{buildroot}%{_bindir}/flutter
 cat > %{buildroot}%{_bindir}/dart << 'WRAPPER'
 #!/usr/bin/env bash
 export FLUTTER_ROOT="%{install_dir}"
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=safe.directory
+export GIT_CONFIG_VALUE_0="${FLUTTER_ROOT}"
 exec "${FLUTTER_ROOT}/bin/dart" "$@"
 WRAPPER
 chmod 0755 %{buildroot}%{_bindir}/dart
